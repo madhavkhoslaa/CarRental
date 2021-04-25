@@ -76,7 +76,13 @@ CarRouter.get("/calculate-price/:id", async (req, res) => {
 //TODO
 CarRouter.get("/search-cars/", async (req, res) => {
   try {
-  } catch (err) {}
+    //seatch car in price range
+    //search cars in time range
+    //search car by brand
+    //search car by model
+  } catch (err) {
+    return res.status(500).send({ message: "Internal Server Error" });
+  }
 });
 
 CarRouter.get("/bookings/:id/", async (req, res) => {
@@ -93,36 +99,52 @@ CarRouter.get("/bookings/:id/", async (req, res) => {
 
 CarRouter.post("/book/:carid/:userid", async (req, res) => {
   try {
-    console.log(req.params);
+    if (req.body.startTime > req.body.endTime) {
+      return res.send(400).send("Start tome cannot be greater than end time");
+    }
     const car = await Vehicle.findById(req.params.carid);
     console.log({ car });
     const user = await User.findById(req.params.userid);
-    console.log({ user });
     if (!car && !user) {
       return res.status(400).send({ message: "Car or user ID incorrect" });
     }
-    const timefor = (req.body.endTime - req.body.startTime) / 60 / 60;
+    if (car.IsAllocated) {
+      return res.status(400).send({ message: "Car is already allocated" });
+    }
+    const timefor = req.body.endTime - req.body.startTime;
     const price = car.Baseprice + car.Ratehourly * timefor;
+    console.log({ price });
     const booking = {
-      carId: req.params.id,
+      carId: req.params.carid,
       userId: req.params.userid,
-      startTime: req.body.startTime,
-      endTime: req.body.endTime,
+      StartTime: req.body.startTime,
+      EndTime: req.body.endTime,
       Model: car.Model,
       Manufacturer: car.Manufacturer,
       price,
     };
     car.IsAllocated = true;
     car.Allocatedto = req.params.userid;
-    car.booked.push({ ...booking });
-    user.booked.push({ ...booking });
+    car.booked.push(booking);
+    user.booked.push(booking);
     await user.save();
     await car.save();
     res.send({ booking, message: "Car is booked" });
-  } catch (err) {}
+  } catch (err) {
+    if (err.name == "CastError") {
+      return res.status(400).send({ message: "Car ID Not Valid" });
+    }
+    if (err.name == "MongoError") {
+      return res.status(400).send({ message: "Car NumberPlate is not unique" });
+    }
+    if (err.name == "ValidationError") {
+      return res.status(400).send({ message: "Car Update body is not valid" });
+    }
+    res.status(500).send({ message: "Internal server error" });
+  }
 });
 
-CarRouter.post("/end/:id/", async (req, res) => {
+CarRouter.post("/end/:carid/", async (req, res) => {
   try {
     const car = await Vehicle.findById(req.params.id);
     if (!car) {
@@ -132,7 +154,9 @@ CarRouter.post("/end/:id/", async (req, res) => {
     car.Allocatedto = null;
     await car.save();
     return res.status(200).send({ message: "Car freed" });
-  } catch (err) {}
+  } catch (err) {
+    res.status(500).send({ message: "Internal server error" });
+  }
 });
 
 module.exports = CarRouter;
