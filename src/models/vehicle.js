@@ -44,7 +44,7 @@ const VehicleSchema = mongoose.Schema({
   Allocatedto: {
     type: String,
   },
-  booked: [{ Bookings }],
+  booked: [Bookings],
 });
 
 const Vehicle = mongoose.model("vehicle", VehicleSchema);

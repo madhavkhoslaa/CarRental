@@ -21,7 +21,7 @@ const UserSchema = mongoose.Schema({
     type: String,
     required: true,
   },
-  booked: [{ Bookings }],
+  booked: [Bookings],
 });
 
 /*
