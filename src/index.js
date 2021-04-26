@@ -10,6 +10,10 @@ app.use(express.json());
 app.use("/user", UserRouter);
 app.use("/car", VehicleRouter);
 
+app.get("/", async (req, res) => {
+  res.send({ message: "Welcone to RentACarr API" });
+});
+
 app.listen(PORT, () => {
   console.log("listening on port " + PORT);
 });
