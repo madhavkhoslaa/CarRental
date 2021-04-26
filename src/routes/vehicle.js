@@ -1,6 +1,6 @@
 const express = require("express");
 const Vehicle = require("../models/vehicle");
-
+const User = require("../models/user");
 const CarRouter = express.Router();
 
 CarRouter.post("", async (req, res) => {
@@ -91,16 +91,14 @@ CarRouter.get("/bookings/:id/", async (req, res) => {
   }
 });
 
-CarRouter.post("/book/:id/:userid", async (req, res) => {
+CarRouter.post("/book/:carid/:userid", async (req, res) => {
   try {
-    //create a booking object
-    //append booking object in user
-    //append booking object in car
-    //set allocated_to userid
-    // see isallocated to true
-    const car = await Vehicle.findById(req.params.id);
-    const user = await User.findOne(req.params.userid);
-    if (!car || !user) {
+    console.log(req.params);
+    const car = await Vehicle.findById(req.params.carid);
+    console.log({ car });
+    const user = await User.findById(req.params.userid);
+    console.log({ user });
+    if (!car && !user) {
       return res.status(400).send({ message: "Car or user ID incorrect" });
     }
     const timefor = (req.body.endTime - req.body.startTime) / 60 / 60;
@@ -116,9 +114,10 @@ CarRouter.post("/book/:id/:userid", async (req, res) => {
     };
     car.IsAllocated = true;
     car.Allocatedto = req.params.userid;
-    car.booked.push({ booking });
-    user.booked.push({ booking });
-    Promise.all([user.save(), car.save]);
+    car.booked.push({ ...booking });
+    user.booked.push({ ...booking });
+    await user.save();
+    await car.save();
     res.send({ booking, message: "Car is booked" });
   } catch (err) {}
 });

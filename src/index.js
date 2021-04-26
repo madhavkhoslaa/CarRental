@@ -1,7 +1,7 @@
 const express = require("express");
+require("./db/connection");
 const UserRouter = require("./routes/user");
 const VehicleRouter = require("./routes/vehicle");
-require("./db/connection");
 require("dotenv").config();
 
 const app = express();
