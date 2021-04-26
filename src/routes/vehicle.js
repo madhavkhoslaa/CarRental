@@ -1,6 +1,7 @@
 const express = require("express");
 const Vehicle = require("../models/vehicle");
 const User = require("../models/user");
+const QueryBuilder = require("../utils/query");
 const CarRouter = express.Router();
 
 CarRouter.post("", async (req, res) => {
@@ -76,11 +77,15 @@ CarRouter.get("/calculate-price/:id", async (req, res) => {
 //TODO
 CarRouter.get("/search-cars/", async (req, res) => {
   try {
+    const query = QueryBuilder(req.body);
+    const cars = await Vehicle.find(query);
+    res.send(cars);
     //seatch car in price range
     //search cars in time range
     //search car by brand
     //search car by model
   } catch (err) {
+    console.log(err);
     return res.status(500).send({ message: "Internal Server Error" });
   }
 });
@@ -100,16 +105,22 @@ CarRouter.get("/bookings/:id/", async (req, res) => {
 CarRouter.post("/book/:carid/:userid", async (req, res) => {
   try {
     if (req.body.startTime > req.body.endTime) {
-      return res.send(400).send("Start tome cannot be greater than end time");
+      return res
+        .status(400)
+        .send({ message: "Start tome cannot be greater than end time" });
     }
     const car = await Vehicle.findById(req.params.carid);
-    console.log({ car });
     const user = await User.findById(req.params.userid);
     if (!car && !user) {
       return res.status(400).send({ message: "Car or user ID incorrect" });
     }
     if (car.IsAllocated) {
       return res.status(400).send({ message: "Car is already allocated" });
+    }
+    if (req.body.endTime > car.endTime && car.fromTime < req.body.startTime) {
+      return res
+        .status(400)
+        .send({ message: "Car not served for user timings" });
     }
     const timefor = req.body.endTime - req.body.startTime;
     const price = car.Baseprice + car.Ratehourly * timefor;
@@ -144,9 +155,10 @@ CarRouter.post("/book/:carid/:userid", async (req, res) => {
   }
 });
 
-CarRouter.post("/end/:carid/", async (req, res) => {
+CarRouter.delete("/end/:carid/", async (req, res) => {
   try {
-    const car = await Vehicle.findById(req.params.id);
+    const car = await Vehicle.findById(req.params.carid);
+    console.log(car);
     if (!car) {
       return res.status(400).send({ message: "Car not found by ID" });
     }
